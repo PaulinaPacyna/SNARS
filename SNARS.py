@@ -36,4 +36,4 @@ class Snars:
 
     def mle(self):
         x_min = min(self.degree_list)
-        return 1 + len(self.degree_list) / (np.log(x_min) + sum(np.log(obs)))
+        return 1 + len(self.degree_list) / (np.log(x_min) + sum(np.log(self.degree_list)))
