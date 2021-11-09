@@ -28,9 +28,10 @@ class Snars:
         plt.plot(x_to_plot, y_to_plot)
 
     def est_alpha_lin_regression(self):
-        bins = self.plot_log_log_hist() # the function returns a list of bins and counts
+        bins = self.plot_log_log_hist()  # the function returns a list of bins and counts
         log_y = bins[0].reshape(-1, 1)
-        log_x = np.array([(a + b) / 2 for a, b in zip(bins[1][:-1], bins[1][1:], )]).reshape(-1,1)  # middles of the intervals
+        # middles of the intervals
+        log_x = np.array([(a + b) / 2 for a, b in zip(bins[1][:-1], bins[1][1:], )]).reshape(-1, 1)
         model = LinearRegression(fit_intercept=True).fit(log_x, log_y)
         return model.coef_, model.intercept_
 
