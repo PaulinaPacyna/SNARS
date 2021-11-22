@@ -11,11 +11,10 @@ class Snars:
         self.degree_list = list(self.degrees.values())
 
     def plot_log_log_hist(self):
-        loglog_hist = plt.hist(self.degree_list, bins=np.exp(np.linspace(np.log(min(self.degree_list)),
+        plt.hist(self.degree_list, bins=np.exp(np.linspace(np.log(min(self.degree_list)),
                                                                          np.log(max(self.degree_list)), 20)))
         plt.yscale('log')
         plt.xscale('log')
-        return loglog_hist
 
     def survival(self, x: float) -> float:
         cdf = len(list(filter(lambda v: v < x, self.degree_list))) / len(self.degree_list)
@@ -28,7 +27,8 @@ class Snars:
         plt.plot(x_to_plot, y_to_plot)
 
     def est_alpha_lin_regression(self):
-        bins = self.plot_log_log_hist()  # the function returns a list of bins and counts
+        bins = np.histogram(self.degree_list, bins=np.exp(np.linspace(np.log(min(self.degree_list)),
+                                                                         np.log(max(self.degree_list)), 20)))
         log_y = bins[0].reshape(-1, 1)
         # middles of the intervals
         log_x = np.array([(a + b) / 2 for a, b in zip(bins[1][:-1], bins[1][1:], )]).reshape(-1, 1)
