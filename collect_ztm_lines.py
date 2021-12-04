@@ -82,16 +82,11 @@ class ZtmFormatReader(object):
             except StopIteration:
                 pass
 
-        self.read_metro()
+        # self.read_metro()
         print("Parsed %d edges %.2fs" % (self.routes_num, time.time() - start))
         print("Known route types: " + self.route_types.__str__())
         return self.points
 
-    def read_metro(self):
-        with open(self.metro_path, "r", encoding="utf-8") as metro_file:
-            data = json.load(metro_file)
-            for metro_line in data:
-                self.read_metro_line(metro_line)
 
     def read_metro_line(self, metro_line: Dict):
         points = metro_line["points"]
