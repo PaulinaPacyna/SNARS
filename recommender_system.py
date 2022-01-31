@@ -22,13 +22,14 @@ class Recommender:
         self.min_common = min_common
         self.my_features = self.__extract_user_data()
         self.similar = []
-        self.cast = [str, int, lambda x: datetime.strptime(x, "%Y-%m-%d")]
 
     def __extract_user_data(self) -> Dict[int, Dict]:
         """Extract movies, ratings and dates for this specific user"""
         data: List[str] = []
         collect = False
-        for file_name in [os.path.join(DATA_DIR, COMBINED_DATA.format(i + 1)) for i in list(range(4))]:
+        for file_name in [
+            os.path.join(DATA_DIR, COMBINED_DATA.format(i + 1)) for i in list(range(4))
+        ]:
             with open(file_name) as f:
                 for line in f:
                     line = line.strip()
@@ -50,18 +51,28 @@ class Recommender:
         similarity score and preferred movies"""
         friend_id = None
         data: List[str] = []
-        for file_name in [os.path.join(DATA_DIR, COMBINED_DATA.format(i + 1)) for i in list(range(4))]:
+        for file_name in [
+            os.path.join(DATA_DIR, COMBINED_DATA.format(i + 1)) for i in list(range(4))
+        ]:
             with open(file_name) as f:
                 for line in f:
                     line = line.strip()
                     if re.match(r"\d+:", line):
                         if friend_id:
-                            features = self.__extract_features(data)  # parse lines of data to features
-                            similarity = self.similarity(self.my_features, features)  # compute similarity of our
+                            features = self.__extract_features(
+                                data
+                            )  # parse lines of data to features
+                            similarity = self.similarity(
+                                self.my_features, features
+                            )  # compute similarity of our
                             # two users
-                            self.similar += [{"user": friend_id,
-                                              "similarity": similarity,
-                                              "movies": features}]  # save the results for the top
+                            self.similar += [
+                                {
+                                    "user": friend_id,
+                                    "similarity": similarity,
+                                    "movies": features,
+                                }
+                            ]  # save the results for the top
                             # n_similar users
                         friend_id = int(re.findall(r"(\d+):", line)[0])
                         if friend_id > LIMIT_USERS:
@@ -77,39 +88,44 @@ class Recommender:
         similar = self.compute_similar()
         weighted_average = {}
         for feature in similar:
-            for movie_id, movie_properties in feature["movies"].items():
+            for movie_id, rating in feature["movies"].items():
                 if movie_id not in weighted_average:
-                    weighted_average[movie_id] = [0, 0, 0]  # numerator, denominator, count
-                weighted_average[movie_id][0] += movie_properties["rating"] * feature["similarity"]
+                    weighted_average[movie_id] = [
+                        0,
+                        0,
+                        0,
+                    ]  # numerator, denominator, count
+                weighted_average[movie_id][0] += rating * feature["similarity"]
                 weighted_average[movie_id][1] += feature["similarity"]
                 weighted_average[movie_id][2] += 1
-        result = {movie_id: value[0] / value[1]
-                  for movie_id, value in weighted_average.items()}
+        result = {
+            movie_id: value[0] / value[1] if value[0] > 1e-13 else 0
+            for movie_id, value in weighted_average.items()
+        }
         return result
 
     @staticmethod
     def __extract_features(data: List[str]) -> Dict[int, Dict]:
         """Transform a line of text like "movie_id,rating,date" to a dict
-                {int(movie_id): {"rating": int(rating),
-                                "date": datetime.strptime(date, "%Y-%m-%d")}"""
-        data_m = [line.split(',') for line in data]
-        return {int(movie_id): {"rating": int(rating),
-                                "date": datetime.strptime(date, "%Y-%m-%d")}
-                for movie_id, rating, date in data_m
-                }
+        {int(movie_id): {"rating": int(rating),
+                        "date": datetime.strptime(date, "%Y-%m-%d")}"""
+        data_m = [line.split(",") for line in data]
+        return {int(movie_id): int(rating) for movie_id, rating, date in data_m}
 
-    def similarity(self, features1: Dict[int, Dict], features2: Dict[int, Dict]) -> float:
+    def similarity(
+            self, features1: Dict[int, Dict], features2: Dict[int, Dict]
+    ) -> float:
         """Compute the similarity based on the correlation between ratings of movies"""
         common = set(features1.keys()).intersection(features2.keys())
         common = [x for x in common if x < LIMIT_MOVIES]
         if len(common) < self.min_common:
-            return -1.
-        val1 = [features1[k]["rating"] for k in common]
-        val2 = [features2[k]["rating"] for k in common]
+            return .0
+        val1 = [features1[k] for k in common]
+        val2 = [features2[k] for k in common]
         return float((pearsonr(val1, val2)[0] + 1) / 2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     r = Recommender(user_id=1, n_similar=5, min_common=10)
     my_movies = list(r.my_features.keys())
     print(len(r.my_features))
@@ -118,5 +134,9 @@ if __name__ == '__main__':
     r.my_features = {k: v for k, v in r.my_features.items() if k in train}
     print(len(r.my_features))
     recommended = r.recommend()
-    print(pd.Series(recommended).sort_values(ascending=False)[:10])
-    print("Similarity: ", r.similarity(test_features, {k: {"rating": v} for k, v in recommended.items()}))
+    print("Similarity: ", r.similarity(test_features, recommended))
+    recommended_series = pd.DataFrame(
+        recommended.items(), columns=["movie", "recommendation"]
+    ).sort_values("recommendation", ascending=False)
+    recommended_series["test_rating"] = recommended_series["movie"].map(test_features)
+    print(recommended_series)
