@@ -1,7 +1,6 @@
 import os
 import re
 from collections import Counter
-from datetime import datetime
 from typing import List, Dict
 
 import pandas as pd
@@ -90,17 +89,14 @@ class Recommender:
         for feature in similar:
             for movie_id, rating in feature["movies"].items():
                 if movie_id not in weighted_average:
-                    weighted_average[movie_id] = [
-                        0,
-                        0,
-                        0,
-                    ]  # numerator, denominator, count
+                    weighted_average[movie_id] = [0] * 3  # numerator, denominator, count
                 weighted_average[movie_id][0] += rating * feature["similarity"]
                 weighted_average[movie_id][1] += feature["similarity"]
                 weighted_average[movie_id][2] += 1
         result = {
             movie_id: value[0] / value[1] if value[0] > 1e-13 else 0
             for movie_id, value in weighted_average.items()
+            if value[2] >self.min_common
         }
         return result
 
@@ -138,5 +134,4 @@ if __name__ == "__main__":
     recommended_series = pd.DataFrame(
         recommended.items(), columns=["movie", "recommendation"]
     ).sort_values("recommendation", ascending=False)
-    recommended_series["test_rating"] = recommended_series["movie"].map(test_features)
     print(recommended_series)
